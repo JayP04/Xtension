@@ -1,0 +1,11 @@
+{
+    "manifest_version": 3,
+    "name": "Simple Calculator",
+    "version": "1.0",
+    "description": "A simple calculator with add and subtract.",
+    "action": {
+      "default_popup": "popup.html",
+      "default_icon": "footclap.png"
+    }
+  }
+  
