@@ -8,8 +8,16 @@
       font-family: 'Segoe UI', sans-serif;
       margin: 0;
       padding: 12px;
-      width: 320px;
-      background-color: #fdfdfd;
+      width: 400px;
+      height: 500px;
+      min-width: 320px;
+      min-height: 420px;
+      background-color: #1f2937; /* gray-800 */
+      color: #f9fafb; /* gray-100 */
+      border-radius: 12px;
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+      border: 1px solid #374151;
+      overflow: hidden;
     }
 
     .header {
@@ -31,26 +39,57 @@
     }
 
     #chat-log {
-      max-height: 300px;
-      overflow-y: auto;
-      border: 1px solid #ddd;
+      max-height: 350px;
+      overflow-y: scroll;
+      overflow-x: hidden;
+      border: 1px solid #374151;
       border-radius: 8px;
-      padding: 10px;
-      background: #ffffff;
-      box-shadow: 0 1px 2px rgba(0,0,0,0.1);
+      padding: 10px 14px 10px 10px;
+      background: #111827;
+      box-shadow: inset 0 1px 2px rgba(0,0,0,0.2);
       margin-bottom: 12px;
+    }
+
+    #chat-log::-webkit-scrollbar {
+      width: 8px;
+    }
+
+    #chat-log::-webkit-scrollbar-thumb {
+      background: #374151;
+      border-radius: 8px;
+      margin-left: 4px;
+    }
+
+    .user, .ai {
+      max-width: 100%;
+      width: 97%;
+      display: block;
+      padding: 13px;
+      margin: 6px 0;
+      border-radius: 6px;
+      color: gray-200;
+      background-color: #1e293b;
+      border: 1px solid #374151;
+      word-wrap: break-word;
+      animation: fadeIn 0.8s ease-in-out;
+      box-shadow: 0 1px 3px rgba(0, 0, 0, 0.15);
     }
 
     .user {
       text-align: right;
-      color: #2563eb;
-      margin: 4px 0;
+      color: #60a5fa;
+      background-color: #1e40af;
+      border-color: #3b82f6;
     }
 
     .ai {
       text-align: left;
-      color: #333;
-      margin: 4px 0;
+      color: #f9fafb;
+    }
+
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(5px); }
+      to { opacity: 1; transform: translateY(0); }
     }
 
     .chat-controls {
@@ -62,12 +101,14 @@
       flex: 1;
       padding: 6px;
       border-radius: 4px;
-      border: 1px solid #ccc;
+      border: 1px solid #4b5563;
+      background-color: #374151;
+      color: #f9fafb;
     }
 
     #send-btn {
       padding: 6px 10px;
-      background-color: #2563eb;
+      background-color: #3b82f6;
       color: white;
       border: none;
       border-radius: 4px;
@@ -76,7 +117,7 @@
     }
 
     #send-btn:hover {
-      background-color: #1e49c1;
+      background-color: #2563eb;
     }
 
     #reveal-btn {
@@ -94,7 +135,7 @@
     }
 
     #reveal-btn:hover {
-      background-color: #0f9d72;
+      background-color: #059669;
     }
   </style>
 </head>
@@ -108,7 +149,9 @@
     </div>
   </div>
 
-  <div id="chat-log"></div>
+  <div id="chat-log">
+    <div class="ai">👋 Hi! Select any question on the page and right-click → 'Explain with AI' to get started.</div>
+  </div>
 
   <div class="chat-controls">
     <input type="text" id="chat-input" placeholder="Ask a follow-up...">
@@ -117,7 +160,6 @@
 
   <button id="reveal-btn">Reveal Full Answer</button>
 
-  
   <script src="marked.min.js"></script>
   <script src="config.js"></script>
   <script src="popup.js"></script>

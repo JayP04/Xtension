@@ -20,12 +20,50 @@ function appendMessage(sender, text) {
 
   const chatLog = document.getElementById("chat-log");
   chatLog.appendChild(msg);
-  chatLog.scrollTop = chatLog.scrollHeight;
+    // Scroll to the bottom of the chat log
+    setTimeout(() => {
+      chatLog.scrollTop = chatLog.scrollHeight;
+    },100);
+}
+
+// Build enhanced prompt with contextual metadata
+function buildPrompt(selectedText, contextExtras = {}) {
+  const { label, section, placeholder, title } = contextExtras;
+
+  const contextBlock = `
+${label ? `- Label: ${label}` : ""}
+${section ? `- Section: ${section}` : ""}
+${title ? `- Page Title: ${title}` : ""}
+${placeholder ? `- Input Placeholder: ${placeholder}` : ""}`.trim();
+
+  if (conceptualMode) {
+    return `You are a helpful AI tutor. A student selected the problem below while working on a webpage.
+Below is the problem followed by extracted page context. Focus on the thought process, not the answer.
+
+Problem:
+"${selectedText}"
+
+Context:
+${contextBlock}`;
+  } else {
+    return `A student is requesting a direct answer for the following problem from a webpage.
+Below is the selected problem and some context from the page:
+
+Problem:
+"${selectedText}"
+
+Context:
+${contextBlock}
+
+Please provide the most accurate and complete answer.`;
+  }
 }
 
 // Call Gemini API with message history
-async function callGemini(newUserMessage, isReveal = false) {
-  appendMessage("user", newUserMessage);
+async function callGemini(newUserMessage, isReveal = false, isSystemPrompt = false) {
+  if (!isSystemPrompt) {
+    appendMessage("user", newUserMessage);
+  }
 
   chatHistory.push({
     role: "user",
@@ -58,6 +96,14 @@ async function callGemini(newUserMessage, isReveal = false) {
       revealBtn.style.display = "block";
     } else {
       revealBtn.style.display = "none";
+
+      // Send message to content script to inject final answer
+      chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
+        chrome.tabs.sendMessage(tabs[0].id, {
+          type: "INJECT_FINAL_ANSWER",
+          answer: reply
+        });
+      });
     }
   } catch (err) {
     console.error("Gemini API error:", err);
@@ -65,7 +111,31 @@ async function callGemini(newUserMessage, isReveal = false) {
   }
 }
 
-// Load initial selected text (for one-time message)
+// Load initial selected text and build full prompt
+function getPageContextAndStart(selectedText) {
+  chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
+    chrome.scripting.executeScript({
+      target: { tabId: tabs[0].id },
+      func: () => {
+        const selection = window.getSelection();
+        const anchor = selection?.anchorNode?.parentElement;
+
+        const label = anchor?.closest('label, .question, h2')?.textContent?.trim() ?? "";
+        const section = document.querySelector('h1, .section-title')?.textContent?.trim() ?? "";
+        const placeholder = document.querySelector('textarea, input')?.placeholder ?? "";
+        const title = document.title;
+
+        return { label, section, placeholder, title };
+      }
+    }, (results) => {
+      const context = results[0]?.result ?? {};
+      const prompt = buildPrompt(selectedText, context);
+      callGemini(prompt, false, true); // ✅ system prompt = true
+    });
+  });
+}
+
+// Init popup UI
 document.addEventListener("DOMContentLoaded", () => {
   const chatLog = document.getElementById("chat-log");
   const inputField = document.getElementById("chat-input");
@@ -115,15 +185,7 @@ document.addEventListener("DOMContentLoaded", () => {
     const selectedText = data.selectedText;
     if (selectedText && firstInteraction) {
       firstInteraction = false;
-
-      const introPrompt = conceptualMode
-        ? `You are a helpful AI tutor. Please conceptually explain the following problem in plain English.
-          Avoid giving full answers, just guide the thinking process.
-          Problem: "${selectedText}"`
-        : `Please provide the full answer to the following question:
-          "${selectedText}"`;
-
-      callGemini(introPrompt);
+      getPageContextAndStart(selectedText); // enhanced prompt logic
     }
   });
 });
